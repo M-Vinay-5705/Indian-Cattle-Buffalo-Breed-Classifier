@@ -1,0 +1,18 @@
+# Py-related
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Model files
+*.pth
+*.pt
+
+# Dataset
+IndianCattleBuffaloeBreeds-Dataset/
+
+# Gradio files
+.gradio/
+
+# System files
+.DS_Store
+Thumbs.db
