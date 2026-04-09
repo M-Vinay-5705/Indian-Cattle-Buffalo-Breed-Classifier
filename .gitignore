@@ -1,0 +1,54 @@
+# 🔹 Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# 🔹 Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 🔹 Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# 🔹 Environment variables
+.env
+
+# 🔹 OS files
+.DS_Store
+Thumbs.db
+
+# 🔹 Logs
+*.log
+
+# 🔹 Model files (optional - remove if you want to upload model)
+*.pth
+*.pt
+*.h5
+*.ckpt
+
+# 🔹 Large datasets (VERY IMPORTANT)
+data/
+IndianCattleBuffaloeBreeds-Dataset/
+*.csv
+*.zip
+
+# 🔹 Temporary files
+temp/
+tmp/
+
+# 🔹 Gradio cache (if generated)
+.gradio/
+
+# 🔹 IDE / Editor files
+.vscode/
+.idea/
+
+# 🔹 Build files
+dist/
+build/
+
+# 🔹 Misc
+*.sqlite3
