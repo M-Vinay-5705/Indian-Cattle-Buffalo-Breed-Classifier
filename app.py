@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Dict, List
 
 import gradio as gr
+import gdown  # 🔥 ADDED
 
 from ai_assistant import BreedAIAssistant
 from breed_predictor import BreedPredictor
@@ -12,6 +13,12 @@ from breed_predictor import BreedPredictor
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(SCRIPT_DIR, "cattle_breed_classifier.pth")
+
+# 🔥 ADDED: Auto-download model if not present
+if not os.path.exists(MODEL_PATH):
+    url = "https://drive.google.com/file/d/1VMimaWINZCXnh-sbjhuT2UdsMvfYMFd3/view?usp=sharing"  # 🔴 REPLACE THIS
+    gdown.download(url, MODEL_PATH, quiet=False)
+
 DATA_DIR = os.path.join(SCRIPT_DIR, "IndianCattleBuffaloeBreeds-Dataset", "breeds", "train")
 FEEDBACK_FILE = os.path.join(SCRIPT_DIR, "prediction_feedback.csv")
 
