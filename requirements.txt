@@ -1,7 +1,8 @@
+gradio
 torch
 torchvision
-matplotlib
-gradio
+numpy
+Pillow
+gdown
 python-dotenv
 groq
-gdown

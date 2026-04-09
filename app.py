@@ -2,10 +2,9 @@ import csv
 import os
 import time
 from datetime import datetime
-from typing import Dict, List
 
 import gradio as gr
-import gdown  # 🔥 ADDED
+import gdown
 
 from ai_assistant import BreedAIAssistant
 from breed_predictor import BreedPredictor
@@ -14,45 +13,20 @@ from breed_predictor import BreedPredictor
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(SCRIPT_DIR, "cattle_breed_classifier.pth")
 
-# 🔥 ADDED: Auto-download model if not present
+# 🔥 Download model if not present
 if not os.path.exists(MODEL_PATH):
-    url = "https://drive.google.com/file/d/1VMimaWINZCXnh-sbjhuT2UdsMvfYMFd3/view?usp=sharing"  # 🔴 REPLACE THIS
+    url = "https://drive.google.com/uc?id=1VMimaWINZCXnh-sbjhuT2UdsMvfYMFd3"
     gdown.download(url, MODEL_PATH, quiet=False)
 
-DATA_DIR = os.path.join(SCRIPT_DIR, "IndianCattleBuffaloeBreeds-Dataset", "breeds", "train")
 FEEDBACK_FILE = os.path.join(SCRIPT_DIR, "prediction_feedback.csv")
 
 
-# -------------------- Helpers --------------------
-
-def build_example_paths():
-    paths = [
-        os.path.join(SCRIPT_DIR, "IndianCattleBuffaloeBreeds-Dataset", "breeds", "test", "Gir", "Gir_001.jpg"),
-        os.path.join(SCRIPT_DIR, "IndianCattleBuffaloeBreeds-Dataset", "breeds", "test", "Murrah", "Murrah_001.jpg"),
-        os.path.join(SCRIPT_DIR, "IndianCattleBuffaloeBreeds-Dataset", "breeds", "test", "Sahiwal", "Sahiwal_001.jpg"),
-    ]
-    return [p for p in paths if os.path.exists(p)]
-
-
-def format_prediction(predicted_breed, confidence):
-    return f"### Prediction\n**Breed:** {predicted_breed}\n**Confidence:** {confidence:.2%}"
-
-
-def format_explanation(report):
-    return (
-        f"### AI Explanation\n"
-        f"**Description:** {report['description']}\n\n"
-        f"**Purpose:** {report['purpose']}\n\n"
-        f"**Care:** {report['care']}"
-    )
-
-
 # -------------------- Load --------------------
-
 try:
-    predictor = BreedPredictor(MODEL_PATH, DATA_DIR)
+    predictor = BreedPredictor(MODEL_PATH, None)
     assistant = BreedAIAssistant()
-except:
+except Exception as e:
+    print("Error loading model:", e)
     predictor = None
     assistant = BreedAIAssistant()
 
@@ -65,8 +39,8 @@ def predict(image):
 
     return (
         result.top_predictions,
-        format_prediction(result.predicted_breed, result.confidence),
-        format_explanation(report),
+        f"### Prediction\n**Breed:** {result.predicted_breed}\n**Confidence:** {result.confidence:.2%}",
+        f"### AI Explanation\n**Description:** {report['description']}\n\n**Purpose:** {report['purpose']}\n\n**Care:** {report['care']}",
         result.predicted_breed,
         result.confidence,
         [{"role": "assistant", "content": f"Ask about {result.predicted_breed}"}],
@@ -112,110 +86,35 @@ def save_feedback(fb, breed, conf):
 with gr.Blocks(title="Cattle Classifier") as demo:
 
     gr.Markdown("# 🐄 Indian Cattle & Buffalo Breed Classifier")
-    gr.Markdown("Upload image → Get prediction → Ask AI")
 
     breed_state = gr.State("")
     conf_state = gr.State(0.0)
 
-    # ----------- TOP SECTION -----------
     with gr.Row():
-
-        # LEFT
         with gr.Column():
-            image = gr.Image(type="pil", label="Upload Image")
+            image = gr.Image(type="pil")
+            predict_btn = gr.Button("Predict")
 
-            with gr.Row():
-                clear_btn = gr.Button("Clear")
-                predict_btn = gr.Button("Submit")
-
-            gr.Examples(build_example_paths(), inputs=image)
-
-        # RIGHT
         with gr.Column():
-            pred_label = gr.Label(num_top_classes=5, label="Top 5 Predictions")
+            pred_label = gr.Label()
             pred_text = gr.Markdown()
 
-    # ----------- BELOW -----------
     explanation = gr.Markdown()
-    feedback = gr.Radio(["Correct", "Incorrect"], label="Feedback")
-    feedback_status = gr.Textbox(label="Status")
-    chatbot = gr.Chatbot(label="AI Assistant")
+    chatbot = gr.Chatbot()
 
-    # 🔥 UPDATED CHAT UI
-    with gr.Row():
-        chat_input = gr.Textbox(
-            placeholder="Ask about breed...",
-            show_label=False,
-            scale=6
-        )
-
-        send_btn = gr.Button(
-            "Send",
-            scale=1,
-            min_width=90
-        )
-
-        clear_chat_btn = gr.Button(
-            "Clear",
-            scale=1,
-            min_width=90
-        )
-
-    
-
-    # ----------- ACTIONS -----------
+    chat_input = gr.Textbox(placeholder="Ask about breed...")
+    send_btn = gr.Button("Send")
 
     predict_btn.click(
         predict,
         inputs=image,
-        outputs=[
-            pred_label,
-            pred_text,
-            explanation,
-            breed_state,
-            conf_state,
-            chatbot,
-        ],
+        outputs=[pred_label, pred_text, explanation, breed_state, conf_state, chatbot],
     )
 
-    # 🔥 ENTER KEY SUPPORT
-    chat_input.submit(
-        add_user,
-        inputs=[chat_input, chatbot],
-        outputs=[chat_input, chatbot],
-    ).then(
-        stream,
-        inputs=[chatbot, breed_state],
-        outputs=chatbot,
+    send_btn.click(add_user, inputs=[chat_input, chatbot], outputs=[chat_input, chatbot]).then(
+        stream, inputs=[chatbot, breed_state], outputs=chatbot
     )
 
-    # BUTTON CLICK
-    send_btn.click(
-        add_user,
-        inputs=[chat_input, chatbot],
-        outputs=[chat_input, chatbot],
-    ).then(
-        stream,
-        inputs=[chatbot, breed_state],
-        outputs=chatbot,
-    )
-
-    clear_chat_btn.click(clear_chat, outputs=chatbot)
-
-    # 🔥 CLEAR IMAGE FIX
-    clear_btn.click(
-        fn=clear_image,
-        outputs=image
-    )
-
-    feedback.change(
-        save_feedback,
-        inputs=[feedback, breed_state, conf_state],
-        outputs=feedback_status,
-    )
-
-
-# -------------------- RUN --------------------
 
 if __name__ == "__main__":
     demo.launch()
