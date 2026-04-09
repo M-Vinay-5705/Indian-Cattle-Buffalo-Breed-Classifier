@@ -4,3 +4,4 @@ matplotlib
 gradio
 python-dotenv
 groq
+gdown
